@@ -48,7 +48,7 @@ within a specified duration. This is done by evaluating the hash value of the in
 ```
 
 !!! Info
-    In a message flow, you can use the cache mediator as a **finder** (in the incoming path to check the request) or as a **collector** (in the outgoing path to cache the response). It is not possible to have more than one cache mediator in the same message flow because mediation is terminated after the finder on a cache hit, and the response is not passed on to the next finder after a cache hit. See the [Example 1](#example-1) given below.
+    In a message flow, you can use the cache mediator as a **finder** (in the incoming path to check the request) or as a **collector** (in the outgoing path to cache the response). The cache type is determined by the `collector` parameter: `collector="false"` represents the finder cache type, while `collector="true"` represents the collector cache type. It is not possible to have more than one cache mediator in the same message flow because mediation is terminated after the finder on a cache hit, and the response is not passed on to the next finder after a cache hit. See the [Example 1](#example-1) given below.
 
 !!! Note
     The message needs to be explicitly marked as *RESPONSE* using the following property when collecting the cached 
@@ -60,10 +60,10 @@ within a specified duration. This is done by evaluating the hash value of the in
     
 ## Configuration
 
-The **Cache type** specifies whether the Cache mediator should be in the incoming path (to check the request) or the outgoing path (to cache the response). Possible values are as follows:
+The **Cache type** specifies whether the Cache mediator should be in the incoming path (to check the request) or the outgoing path (to cache the response). This is controlled by the `collector` parameter in the cache configuration. Possible values are as follows:
 
-- **Finder** : If this is selected, the Cache mediator is used to search for the request hash of incoming messages.
-- **Collector** : If this is selected, the Cache mediator is used to collect response messages in the cache.
+- **Finder** : If this is selected (by setting `collector="false"`), the Cache mediator is used to search for the request hash of incoming messages.
+- **Collector** : If this is selected (by setting `collector="true"`), the Cache mediator is used to collect response messages in the cache.
 
 If the finder is selected as the cache type following parameters can be configured.
 
