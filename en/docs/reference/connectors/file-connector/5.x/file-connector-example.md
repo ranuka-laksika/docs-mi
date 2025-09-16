@@ -10,11 +10,11 @@ It will have two HTTP API resources, which are `create` and `read`.
 
 * `/create `: The user sends the request payload which includes the location where the file needs to be saved and the content needs to be added to the file. This request is sent to the integration runtime by invoking the FileConnector API. It saves the file in the specified location with the relevant content.
 
-    <p><img src="{{base_path}}/assets/img/integrate/connectors/filecon-3.x/fileconnector-03.png" title="Adding a Rest API" width="800" alt="Adding a Rest API" /></p>
+    <p><img src="{{base_path}}/assets/img/integrate/connectors/file-5.x/file-conn-add-api.png" title="Adding a Rest API" width="800" alt="Adding a Rest API" /></p>
 
 * `/read `: The user sends the request payload, which includes the location of the file that needs to be read. This request is sent to the integration runtime where the FileConnector API resides. Once the API is invoked, it first checks if the file exists in the specified location. If it exists, the content is read and response is sent to the user. If the file does not exist, it sends an error response to the user.
 
-    <img src="{{base_path}}/assets/img/integrate/connectors/filecon-3.x/fileconnector-02.png" title="Adding a Rest API" width="800" alt="Adding a Rest API"/>
+    <img src="{{base_path}}/assets/img/integrate/connectors/file-5.x/file-con-runtime-services.png" title="File Read Operation" width="800" alt="File Read Operation"/>
 
 If you do not want to configure this yourself, you can simply [get the project](#get-the-project) and run it.
 
@@ -204,7 +204,7 @@ You can further refer to the application deployed through the CLI tool. See the 
     }
     ```
 
-    <a href="{{base_path}}/assets/img/integrate/connectors/file-5.x/file-con-execute.png" alt="Test Create Operation" width="900"></a>
+    <img src="{{base_path}}/assets/img/integrate/connectors/file-5.x/file-con-execute.png" title="Test Create Operation" width="900" alt="Test Create Operation"/>
 
 4. Check the success response received from the server, and verify that the file should be created in the specified location in the above payload.
 
