@@ -347,7 +347,14 @@ Now, let's configure files in the `org.wso2.carbon.esb.connector.sample/src/main
     </connector>
     ```
 
-5. Create a folder named icon in the `/src/main/resources` directory and add two icons. You can download icons from [here](http://svn.wso2.org/repos/wso2/scratch/connectors/icons/).
+5. Create a folder named icon in the `/src/main/resources` directory and add two icons.
+
+You need to provide two icon files for your connector:
+
+- **icon-large.png**: A larger version of the connector icon
+- **icon-small.png**: A smaller version of the connector icon
+
+These icons should be custom images that represent your connector's functionality and service integration.
 
 ### Step 3: Building the connector
 
