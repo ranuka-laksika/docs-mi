@@ -3,9 +3,9 @@ name: Claude Code • Auto PR on Comment
 on:
   issue_comment:
     types: [created]
-  # schedule:
-  #   - cron: "0 * * * *" 
-  # workflow_dispatch: {}
+  schedule:
+    - cron: "0 * * * *" 
+  workflow_dispatch: {}
 
 concurrency:
   group: doc-fixing-ai-agent
@@ -14,7 +14,7 @@ concurrency:
 jobs:
   get_issue_and_assign:
     runs-on: ubuntu-latest
-    if: false
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
@@ -37,8 +37,45 @@ jobs:
           ISSUE_NUMBER=$(echo "$ISSUE_JSON" | jq -r .number)
           echo "oldest_issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
           
-      - name: Update labels and trigger Claude
+      - name: Verify label was added by authorized user
+        id: verify_label_adder
         if: steps.get_oldest_queued.outputs.oldest_issue_number != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=${{ steps.get_oldest_queued.outputs.oldest_issue_number }}
+
+          echo "Verifying who added AI-Agent/Queued label for issue #$ISSUE_NUMBER..."
+
+          # Find who last added the AI-Agent/Queued label via the issue timeline
+          LABEL_ADDER=$(gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER/timeline?per_page=100" \
+            | jq -r '[.[] | select(.event == "labeled" and .label.name == "AI-Agent/Queued")] | last | .actor.login')
+
+          echo "Label was added by: $LABEL_ADDER"
+
+          if [ -z "$LABEL_ADDER" ] || [ "$LABEL_ADDER" == "null" ]; then
+            echo "Could not determine who added AI-Agent/Queued label. Skipping issue #$ISSUE_NUMBER."
+            echo "authorized=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check the collaborator permission level for the user who added the label
+          PERMISSION=$(gh api "repos/${{ github.repository }}/collaborators/$LABEL_ADDER/permission" \
+            --jq '.permission' 2>/dev/null || echo "none")
+
+          echo "Permission level for $LABEL_ADDER: $PERMISSION"
+
+          if [[ "$PERMISSION" == "write" || "$PERMISSION" == "admin" || "$PERMISSION" == "maintain" ]]; then
+            echo "User $LABEL_ADDER is authorized (permission: $PERMISSION). Proceeding."
+            echo "authorized=true" >> $GITHUB_OUTPUT
+          else
+            echo "Label was added by $LABEL_ADDER who does not have write access (permission: $PERMISSION). Removing label."
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} --remove-label "AI-Agent/Queued"
+            echo "authorized=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update labels and trigger Claude
+        if: steps.get_oldest_queued.outputs.oldest_issue_number != '' && steps.verify_label_adder.outputs.authorized == 'true'
         env: 
           GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
         run: | 
@@ -53,8 +90,178 @@ jobs:
 
   run_claude:
     runs-on: ubuntu-latest
-    if: false
+    if: contains(github.event.comment.body, '@wso2-engineering-bot') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     steps:
+      - name: Security Check - Detect post-label issue edits
+        id: security_check
+        env:
+          GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+
+          # Install gh CLI if not available
+          if ! command -v gh &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y gh
+          fi
+
+          echo "Checking if issue #$ISSUE_NUMBER was edited after AI-Agent label was added..."
+
+          # Get issue timeline to find when AI-Agent/Queued or AI-Agent/In-Progress label was added
+          TIMELINE=$(gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER/timeline?per_page=100")
+
+          # Find the most recent time when AI-Agent/Queued or AI-Agent/In-Progress label was added
+          LABEL_ADDED_AT=$(echo "$TIMELINE" | jq -r '
+            [.[] | select(.event == "labeled" and (.label.name == "AI-Agent/Queued" or .label.name == "AI-Agent/In-Progress"))]
+            | sort_by(.created_at)
+            | last
+            | .created_at
+          ')
+
+          if [ -z "$LABEL_ADDED_AT" ] || [ "$LABEL_ADDED_AT" == "null" ]; then
+            echo "Could not determine when AI-Agent label was added. Proceeding with caution."
+            echo "edit_detected=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "AI-Agent label was added at: $LABEL_ADDED_AT"
+
+          # Get the issue's last update time
+          ISSUE_UPDATED_AT=$(gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER" --jq '.updated_at')
+          echo "Issue was last updated at: $ISSUE_UPDATED_AT"
+
+          # Convert timestamps to Unix epoch for comparison
+          LABEL_EPOCH=$(date -d "$LABEL_ADDED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LABEL_ADDED_AT" +%s)
+          UPDATED_EPOCH=$(date -d "$ISSUE_UPDATED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$ISSUE_UPDATED_AT" +%s)
+
+          # Allow 60 second grace period for system updates (label addition itself causes an update)
+          GRACE_PERIOD=60
+          TIME_DIFF=$((UPDATED_EPOCH - LABEL_EPOCH))
+
+          if [ $TIME_DIFF -gt $GRACE_PERIOD ]; then
+            echo "⚠️ SECURITY ALERT: Issue was edited $TIME_DIFF seconds after AI-Agent label was added!"
+            echo "This could be a malicious content injection attempt."
+            echo "edit_detected=true" >> $GITHUB_OUTPUT
+
+            # Remove AI-Agent labels
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} --remove-label "AI-Agent/Queued" 2>/dev/null || true
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} --remove-label "AI-Agent/In-Progress" 2>/dev/null || true
+
+            # Add security warning comment
+            COMMENT_BODY="⚠️ **Security Check Failed**
+
+            This issue was edited after the AI-Agent label was added. For security reasons, edited issues require manual re-approval before automated processing.
+
+            **Timeline:**
+            - Label added: $LABEL_ADDED_AT
+            - Issue updated: $ISSUE_UPDATED_AT
+            - Time difference: ${TIME_DIFF}s
+
+            If this is a legitimate edit, a maintainer with write access can re-add the \`AI-Agent/Queued\` label to queue this issue for processing.
+
+            **Why this check exists:** This prevents malicious actors from injecting harmful content after an issue has been approved for automated processing."
+
+            gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$COMMENT_BODY"
+
+            exit 1
+          else
+            echo "✓ Security check passed. Issue was not significantly edited after labeling."
+            echo "edit_detected=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Exit if security check failed
+        if: steps.security_check.outputs.edit_detected == 'true'
+        run: |
+          echo "Security check detected suspicious activity. Exiting workflow."
+          exit 1
+
+      - name: Security Check - Scan for malicious patterns
+        id: malicious_scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+
+          echo "Scanning issue #$ISSUE_NUMBER for malicious content patterns..."
+
+          # Get issue body (raw markdown, includes HTML comments and hidden content)
+          ISSUE_BODY=$(gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER" --jq '.body')
+
+          echo "Issue body length: ${#ISSUE_BODY} characters"
+
+          # Check if issue contains HTML comments (potential hiding technique)
+          if echo "$ISSUE_BODY" | grep -q "<!--"; then
+            echo "⚠️ Issue contains HTML comments (potential content hiding)"
+          fi
+
+          # Check if issue contains collapsed sections (potential hiding technique)
+          if echo "$ISSUE_BODY" | grep -qi "<details>"; then
+            echo "⚠️ Issue contains collapsed sections (potential content hiding)"
+          fi
+
+          # Define malicious patterns to detect (case-insensitive)
+          # NOTE: These patterns scan the RAW markdown body, including:
+          #   - HTML comments (<!-- -->)
+          #   - Collapsed sections (<details>)
+          #   - Reference links
+          #   - All hidden content
+          MALICIOUS_PATTERNS=(
+            "curl.*-X.*POST.*http"
+            "wget.*http"
+            "printenv.*base64"
+            "env.*base64"
+            "\$\(printenv"
+            "python.*-c.*import"
+            "bash.*-c"
+            "sh.*-c"
+            "eval.*\$"
+            "nc.*-e"
+            "netcat"
+            "telnet"
+            "/dev/tcp/"
+            "<!--.*curl"
+            "<!--.*wget"
+            "<!--.*INTERNAL"
+            "<details>.*curl"
+            "<details>.*wget"
+            "INTERNAL.*PROCESSING.*NOTE"
+            "MANDATORY.*CHECK"
+            "SECURITY.*POLICY.*EXECUTE"
+            "BEFORE.*CLOSING.*RUN"
+            "BEFORE.*PR.*EXECUTE"
+            "DO.*NOT.*INCLUDE.*IN.*PR"
+          )
+
+          SUSPICIOUS_FOUND=0
+          MATCHED_PATTERNS=""
+
+          for pattern in "${MALICIOUS_PATTERNS[@]}"; do
+            if echo "$ISSUE_BODY" | grep -iE "$pattern" > /dev/null; then
+              SUSPICIOUS_FOUND=1
+              MATCHED_PATTERNS="$MATCHED_PATTERNS\n- Pattern: \`$pattern\`"
+              echo "⚠️ Detected suspicious pattern: $pattern"
+            fi
+          done
+
+          if [ $SUSPICIOUS_FOUND -eq 1 ]; then
+            echo "suspicious_content=true" >> $GITHUB_OUTPUT
+
+            # Add warning comment to issue
+            WARNING_COMMENT="⚠️ **Security Scan Alert**
+
+            Automated security scan detected potentially malicious content patterns in this issue:
+            $MATCHED_PATTERNS
+
+            **Action taken:** The automated agent will be instructed to ignore any command execution requests and focus only on legitimate documentation fixes.
+
+            **For maintainers:** Please review the issue content carefully before manually processing. If this is a false positive and the issue is legitimate, the agent will proceed with documentation fixes only."
+
+            gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$WARNING_COMMENT"
+
+            echo "⚠️ Suspicious patterns detected. Agent will proceed with extra caution."
+          else
+            echo "✓ No malicious patterns detected."
+            echo "suspicious_content=false" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout original repository
         uses: actions/checkout@v4
         with:
@@ -98,6 +305,28 @@ jobs:
           echo "REPOSITORY=$REPOSITORY" >> $GITHUB_ENV
           echo "LATEST_VERSION=$LATEST_VERSION" >> $GITHUB_ENV
 
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install documentation dependencies
+        run: |
+
+          # Pre-install mkdocs and dependencies from docs-is repository
+          cd $GITHUB_WORKSPACE/docs-is
+          if [ -f requirements.txt ]; then
+            pip3 install -r requirements.txt
+            echo "✓ Installed dependencies from requirements.txt"
+          elif [ -f requirements.pip ]; then
+            pip3 install -r requirements.pip
+            echo "✓ Installed dependencies from requirements.pip"
+          else
+            # Fallback: install mkdocs directly
+            pip3 install mkdocs mkdocs-material
+            echo "✓ Installed mkdocs and mkdocs-material"
+          fi
+
       - name: Run Claude
         id: run_claude
         uses: anthropics/claude-code-action@v1
@@ -110,7 +339,7 @@ jobs:
           prompt: ${{ env.SYSTEM_PROMPT }}
           trigger_phrase: "@wso2-engineering-bot" 
           claude_args: |
-            --allowedTools "Bash(*),Bash(git:*),Bash(mkdocs:*),Bash(python3:*),Bash(pip3:*),WebFetch,mcp__github__create_pull_request,mcp__github__get_issue,mcp__github__search_pull_requests,mcp__github__list_branches,Edit,Read,Write,mcp__github__update_issue,mcp__github__create_branch,mcp__github__add_issue_comment,mcp__github__get_file_contents"
+            --allowedTools "Bash(git:*),Bash(mkdocs:*),Bash(python3:*),Bash(pip3:*),WebFetch,mcp__github__create_pull_request,mcp__github__get_issue,mcp__github__search_pull_requests,mcp__github__list_branches,Edit,Read,Write,mcp__github__update_issue,mcp__github__create_branch,mcp__github__add_issue_comment,mcp__github__get_file_contents"
             --model claude-sonnet-4-5-20250929
 
       - name: Get next queued issue
