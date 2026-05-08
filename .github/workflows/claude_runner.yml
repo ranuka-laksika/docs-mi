@@ -36,13 +36,14 @@ jobs:
           fi
           ISSUE_NUMBER=$(echo "$ISSUE_JSON" | jq -r .number)
           echo "oldest_issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
-      
+
       - name: Security Check - Scan for malicious patterns
         id: malicious_scan
+        if: steps.get_oldest_queued.outputs.oldest_issue_number != ''
         env:
           GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
         run: |
-          ISSUE_NUMBER=${{ github.event.issue.number }}
+          ISSUE_NUMBER=${{ steps.get_oldest_queued.outputs.oldest_issue_number }}
 
           echo "Scanning issue #$ISSUE_NUMBER for malicious content patterns..."
 
@@ -131,12 +132,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
         run: |
-          ISSUE_NUMBER=${{ github.event.issue.number }}
+          ISSUE_NUMBER=${{ steps.get_oldest_queued.outputs.oldest_issue_number }}
 
           echo "❌ Exiting workflow due to detected malicious patterns."
 
-          # Remove AI-Agent/In-Progress label if it exists
-          gh issue edit $ISSUE_NUMBER --remove-label "AI-Agent/In-Queued" 2>/dev/null || true
+          # Remove AI-Agent/Queued label if it exists
+          gh issue edit $ISSUE_NUMBER --remove-label "AI-Agent/Queued" 2>/dev/null || true
 
           echo "The issue has been flagged and will not be processed by the automated agent."
           exit 1
