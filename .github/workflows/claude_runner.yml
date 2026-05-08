@@ -262,6 +262,14 @@ jobs:
             echo "✓ No malicious patterns detected."
             echo "suspicious_content=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Exit if malicious content detected
+        if: steps.malicious_scan.outputs.suspicious_content == 'true'
+        run: |
+          echo "❌ Exiting workflow due to detected malicious patterns."
+          echo "The issue has been flagged and will not be processed by the automated agent."
+          exit 1
+
       - name: Checkout original repository
         uses: actions/checkout@v4
         with:
