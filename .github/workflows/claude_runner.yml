@@ -275,9 +275,6 @@ jobs:
           # Remove AI-Agent/In-Progress label if it exists
           gh issue edit $ISSUE_NUMBER --remove-label "AI-Agent/In-Progress" 2>/dev/null || true
 
-          # Add Security-Alert label
-          gh issue edit $ISSUE_NUMBER --add-label "Security-Alert"
-
           echo "The issue has been flagged and will not be processed by the automated agent."
           exit 1
 
@@ -333,7 +330,7 @@ jobs:
         run: |
 
           # Pre-install mkdocs and dependencies from docs-is repository
-          cd $GITHUB_WORKSPACE/docs-is
+          cd $GITHUB_WORKSPACE/docs-mi
           if [ -f requirements.txt ]; then
             pip3 install -r requirements.txt
             echo "✓ Installed dependencies from requirements.txt"
