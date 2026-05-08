@@ -265,8 +265,19 @@ jobs:
 
       - name: Exit if malicious content detected
         if: steps.malicious_scan.outputs.suspicious_content == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
         run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+
           echo "❌ Exiting workflow due to detected malicious patterns."
+
+          # Remove AI-Agent/In-Progress label if it exists
+          gh issue edit $ISSUE_NUMBER --remove-label "AI-Agent/In-Progress" 2>/dev/null || true
+
+          # Add Security-Alert label
+          gh issue edit $ISSUE_NUMBER --add-label "Security-Alert"
+
           echo "The issue has been flagged and will not be processed by the automated agent."
           exit 1
 
