@@ -910,8 +910,8 @@ The following operations allow you to work with the HTTP. Click an operation nam
     </http.head>
     ```
 
-??? note "HEAD"
-    The `HEAD` operation sends an HTTP HEAD request.
+??? note "OPTIONS"
+    The `OPTIONS` operation sends an HTTP OPTIONS request.
     <table>
         <tr>
             <th>Parameter Name</th>
