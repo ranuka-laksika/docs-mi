@@ -1298,6 +1298,114 @@ The connection configuration parameters are used to establish a connection with 
     ]
     ```  
 
+## Using tools with agents
+
+The `agent` operation supports tools that extend the agent's capabilities by allowing it to interact with external systems, retrieve data, and perform actions. Tools enable agents to call APIs, access knowledge bases, and execute complex workflows autonomously.
+
+### Tool types
+
+The WSO2 MI Generative AI Module supports the following tool types:
+
+- **HTTP tools**: Call external REST APIs and services.  
+  Examples: POST, GET, PUT, DELETE operations.
+
+- **AI operations**: Leverage AI capabilities within the agent workflow.  
+  Examples: `addToKnowledge`, `getFromKnowledge` operations.
+
+- **MCP tools**: Integrate with Model Context Protocol (MCP) servers to access specialized external tools and services.
+
+### How to configure tools
+
+Tools are configured within the `agent` operation. Each tool requires:
+
+- **Tool name**: A unique identifier for the tool.
+- **Tool description**: Clear description that helps the AI understand when and how to use the tool.
+- **Connection**: The connection configuration for the external system.
+- **Parameters**: Input parameters that the AI can populate dynamically.
+
+### Sample configuration with tools
+
+```xml
+<ai.agent>
+    <connections>
+        <llmConfigKey>LLM_CONN</llmConfigKey>
+        <memoryConfigKey>MEMORY_CONN</memoryConfigKey>
+    </connections>
+    <sessionId>{${payload.sessionId}}</sessionId>
+    <role>Customer Assistance Agent</role>
+    <instructions>Assist customers by providing accurate and helpful responses.</instructions>
+    <prompt>${payload.query}</prompt>
+    <responseVariable>ai_agent_1</responseVariable>
+    <modelName>gpt-4o</modelName>
+    <tools>
+        <tool name="CustomerInfoTool" template="http_post_tool_1" resultExpression="${vars.http_post_1.payload}" description="Get customer information from the database"/>
+        <tool name="GetDocumentsTool" template="ai_getFromKnowledge_tool_1" resultExpression="${vars.ai_getFromKnowledge_1.payload}" description="Retrieve documents from the knowledge base"/>
+    </tools>
+</ai.agent>
+```
+
+### MCP tools
+
+Model Context Protocol (MCP) tools provide a standardized way to connect AI agents with external services and data sources. MCP tools enable agents to access specialized capabilities through MCP servers.
+
+#### MCP connection configuration
+
+To use MCP tools, create an MCP connection with the following parameters:
+
+<table>
+    <tr>
+        <th>Parameter name</th>
+        <th>Display name</th>
+        <th>Description</th>
+        <th>Required</th>
+    </tr>
+    <tr>
+        <td>name</td>
+        <td>Connection name</td>
+        <td>Name of the MCP connection.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>url</td>
+        <td>Server URL</td>
+        <td>URL of the MCP server.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>authType</td>
+        <td>Authentication type</td>
+        <td>Authentication method (if required by the MCP server).</td>
+        <td>No</td>
+    </tr>
+</table>
+
+#### Add MCP tools to an agent
+
+1. Configure an MCP connection to connect to your MCP server.
+2. Add MCP tools within the `agent` operation.
+3. The agent automatically discovers available tools from the connected MCP server.
+4. Select the tools you want to include in your agent.
+
+#### Sample MCP tool configuration
+
+```xml
+<ai.agent>
+    <connections>
+        <llmConfigKey>LLM_CONN</llmConfigKey>
+    </connections>
+    <sessionId>{${payload.sessionId}}</sessionId>
+    <role>Data Analysis Agent</role>
+    <prompt>${payload.query}</prompt>
+    <responseVariable>ai_agent_1</responseVariable>
+    <modelName>gpt-4o</modelName>
+    <tools>
+        <tool name="DatabaseQueryTool" template="mcp_tool_1" resultExpression="${vars.mcp_tool_1.payload}" description="Execute database queries through MCP server"/>
+    </tools>
+</ai.agent>
+```
+
+For a complete example of adding and using MCP tools with AI agents, see the [Adding MCP Tools]({{base_path}}/get-started/build-first-ai-integration/first-integration-ai-agent/#adding-mcp-tools) section in the Build an AI Agent tutorial.
+
 Click on the **Go to Tutorial** button below to learn how to build your first AI integration using the above operations. The tutorial will guide you through the process of creating a simple integration that utilizes the AI capabilities of WSO2 Integrator: MI.
 
 <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 20px;">
