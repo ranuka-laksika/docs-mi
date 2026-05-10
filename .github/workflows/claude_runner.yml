@@ -143,7 +143,7 @@ jobs:
           exit 1
           
       - name: Update labels and trigger Claude
-        if: steps.get_oldest_queued.outputs.oldest_issue_number != '' && steps.verify_label_adder.outputs.authorized == 'true'
+        if: steps.get_oldest_queued.outputs.oldest_issue_number != ''
         env: 
           GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
         run: | 
