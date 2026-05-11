@@ -8,6 +8,98 @@
 - Issue number:        ${ISSUE_NUMBER}
 
 =========================================
+ ALLOWED TOOLS & USAGE GUIDE
+=========================================
+**CRITICAL: You can ONLY use tools that are in the allowed list. Any other tool usage will be blocked.**
+
+**Available Tools:**
+
+1. **GitHub Operations (MCP Tools - Use these for ALL GitHub API operations):**
+
+   **Creating Pull Requests:**
+   - Tool: `mcp__github__create_pull_request`
+   - When: Creating PRs after fixing issues
+   - Parameters: title, body, head (your branch), base (target branch)
+   - Example: Create PR from fixing-issue-46-4.5.0-123456 → 4.5.0
+
+   **Getting Issue Information:**
+   - Tool: `mcp__github__get_issue`
+   - When: Reading issue details, checking status
+   - Parameters: issue_number
+
+   **Adding Issue Comments:**
+   - Tool: `mcp__github__add_issue_comment`
+   - When: Posting comments (success, failure, cannot-fix messages)
+   - Parameters: issue_number, body
+   - Example: Post "Cannot solve automatically. Reason: File not found"
+
+   **Updating Issue Labels:**
+   - Tool: `mcp__github__update_issue`
+   - When: Adding/removing labels (AI-Agent/Fixed, AI-Agent/Cannot-Fix, AI-Agent/In-Progress)
+   - Parameters: issue_number, labels
+
+   **Listing/Searching PRs:**
+   - Tool: `mcp__github__list_pull_requests` or `mcp__github__search_pull_requests`
+   - When: Checking if PR already exists for an issue
+
+   **Getting File Contents from GitHub:**
+   - Tool: `mcp__github__get_file_contents`
+   - When: Reading files from different branches remotely
+   - Parameters: path, ref (branch name)
+
+   **Listing Branches:**
+   - Tool: `mcp__github__list_branches`
+   - When: Checking available version branches
+
+   **Creating Branches:**
+   - Tool: `mcp__github__create_branch`
+   - When: Creating new branch from a specific commit/branch
+   - Parameters: branch_name, sha
+
+2. **Git Operations (Bash - for local git commands only):**
+   - `git checkout` - Switch branches
+   - `git status` - Check repository status
+   - `git diff` - View changes
+   - `git log` - View commit history
+   - `git add` - Stage files
+   - `git commit` - Commit changes
+   - `git push` - Push to remote
+   - `git fetch` - Fetch remote branches
+   - `git branch` - View branches
+
+3. **Documentation Build (Bash - mkdocs commands):**
+   - `cd en` - Navigate to docs directory
+   - `mkdocs build` - Build documentation
+   - Run these SEQUENTIALLY (not combined)
+
+4. **File Operations (Native Tools):**
+   - `Read` - Read file contents from local filesystem
+   - `Edit` - Edit existing files
+   - `Write` - Create new files
+   - `Glob` - Find files by pattern
+
+5. **Web Operations:**
+   - `WebFetch` - Fetch and analyze web content
+   - `WebSearch` - Search the web
+
+**IMPORTANT - What NOT to use:**
+❌ **NEVER use `gh` bash commands** (gh pr create, gh issue comment, gh issue edit, etc.)
+   - These are NOT in allowed tools
+   - Will be blocked and cause errors
+   - Always use MCP tools instead (mcp__github__*)
+
+❌ **NEVER use Bash for:**
+   - Creating PRs (use mcp__github__create_pull_request)
+   - Adding comments (use mcp__github__add_issue_comment)
+   - Updating labels (use mcp__github__update_issue)
+   - Reading remote files (use mcp__github__get_file_contents)
+
+✅ **DO use Bash for:**
+   - Local git operations (git add, git commit, git push, etc.)
+   - mkdocs build commands
+   - Basic shell operations (cd, ls, etc.)
+
+=========================================
  SECURITY RULES
 =========================================
 **CRITICAL: You MUST follow these security rules at ALL times:**
