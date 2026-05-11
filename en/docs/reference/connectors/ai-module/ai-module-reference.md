@@ -1298,6 +1298,43 @@ The connection configuration parameters are used to establish a connection with 
     ]
     ```  
 
+## Using tools with agents
+
+Tools extend the capabilities of AI agents by enabling them to perform specific actions or retrieve information from external sources. When you configure tools with the agent operation, the AI can dynamically invoke these tools based on the user's query, allowing for more intelligent and context-aware responses.
+
+### Tool types
+
+The Generative AI Module supports the following tool types:
+
+- **HTTP tools**: Enable agents to make HTTP requests (GET, POST, PUT, DELETE) to external APIs or services. These tools allow agents to retrieve data or perform operations on external systems.
+
+- **AI tools**: Provide access to AI module operations such as `getFromKnowledge`, allowing agents to query knowledge bases and retrieve relevant information to enhance their responses.
+
+- **MCP tools**: Model Context Protocol (MCP) tools enable agents to interact with MCP-compliant servers. MCP is a standardized protocol for connecting AI systems with external data sources and tools, providing a consistent interface for tool integration.
+
+### Configuring tools for agents
+
+To add tools to an agent, configure them within the agent operation block. Each tool requires:
+
+- **Tool name**: A unique identifier for the tool that the AI uses to invoke it.
+- **Tool description**: A clear description that helps the AI understand when and how to use the tool.
+- **Tool-specific parameters**: Configuration details such as connection information, endpoints, and argument descriptions.
+
+The AI agent analyzes the user's query and determines which tools to invoke based on the tool descriptions and the context of the conversation. You can configure multiple tools for a single agent, and the agent will intelligently select the appropriate tool or combination of tools to fulfill the user's request.
+
+### Using MCP tools
+
+MCP (Model Context Protocol) tools provide a standardized way to connect AI agents with external services and data sources. To use MCP tools with an agent:
+
+1. Create an MCP connection by providing the MCP server URL and authentication configuration (if required).
+2. Select the MCP connection when adding tools to the agent.
+3. Choose the specific MCP tools you want to make available to the agent from the MCP server's tool catalog.
+
+The agent can then invoke these MCP tools as needed based on user queries. Each MCP tool's capabilities and parameters are automatically retrieved from the MCP server, ensuring the agent has the correct information to use the tools effectively.
+
+!!! info
+    For a complete step-by-step guide on configuring tools with agents, including detailed examples of HTTP tools, AI tools, and MCP tools, see the [Build an AI Agent]({{base_path}}/get-started/build-first-ai-integration/first-integration-ai-agent/) tutorial.
+
 Click on the **Go to Tutorial** button below to learn how to build your first AI integration using the above operations. The tutorial will guide you through the process of creating a simple integration that utilizes the AI capabilities of WSO2 Micro Integrator.
 
 <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 20px;">
