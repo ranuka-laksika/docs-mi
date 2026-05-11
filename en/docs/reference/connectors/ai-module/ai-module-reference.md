@@ -464,6 +464,246 @@ The connection configuration parameters are used to establish a connection with 
             <td>Yes</td>
         </tr>
     </table>
+
+## Tools
+
+Tools extend the capabilities of AI agents by enabling them to interact with external systems, APIs, and knowledge bases. When you use the `agent` operation, you can configure multiple tools that the AI model can invoke dynamically based on the user's query and the agent's instructions.
+
+### Overview
+
+Tools allow AI agents to:
+
+- Retrieve data from external APIs and services
+- Access information from knowledge bases
+- Execute actions on behalf of users
+- Integrate with internal systems and databases
+
+The AI model automatically determines which tools to use, when to use them, and how to combine their results to provide accurate and contextual responses.
+
+### How tools work
+
+When you configure an agent with tools, the following process occurs:
+
+1. The AI model analyzes the user's query and the agent's instructions.
+2. Based on the analysis, the model determines which tools are needed to fulfill the request.
+3. The model invokes the selected tools with appropriate parameters.
+4. The tool executes and returns structured results to the model.
+5. The model processes the tool results and generates a final response for the user.
+
+All tool executions are included in the agent's response under the `toolExecutions` array, providing full transparency into which tools were used and what results they returned.
+
+### Tool types
+
+The Generative AI Module supports the following tool types:
+
+#### HTTP tools
+
+HTTP tools enable agents to call external REST APIs. You can configure HTTP tools to make GET, POST, PUT, DELETE, and other HTTP requests to external services.
+
+**Supported HTTP methods:**
+
+- **POST** - Create or submit data to an external API
+- **GET** - Retrieve data from an external API  
+- **PUT** - Update data in an external API
+- **DELETE** - Remove data from an external API
+- **PATCH** - Partially update data in an external API
+
+**Configuration parameters:**
+
+<table>
+    <tr>
+        <th>Parameter name</th>
+        <th>Description</th>
+        <th>Required</th>
+    </tr>
+    <tr>
+        <td>name</td>
+        <td>Unique identifier for the tool. This name should be descriptive and indicate the tool's purpose (for example, CustomerInfoTool, OrderCreationTool).</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>description</td>
+        <td>Clear description of what the tool does. The AI model uses this description to determine when to invoke the tool. Make it specific and actionable (for example, "Get customer information from the internal database" rather than "Customer tool").</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>connection</td>
+        <td>HTTP connection reference. Create an HTTP connection with the base URL of the target API.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>relativePath</td>
+        <td>Path relative to the base URL defined in the connection (for example, /customers, /orders/create).</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>requestBody</td>
+        <td>Request payload for POST, PUT, and PATCH methods. You can mark this field as an AI-populated argument by enabling the AI assist option, allowing the model to dynamically generate the request payload.</td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td>queryParameters</td>
+        <td>URL query parameters. You can mark individual parameters as AI-populated arguments.</td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td>headers</td>
+        <td>Custom HTTP headers to include in the request.</td>
+        <td>No</td>
+    </tr>
+</table>
+
+**Example: HTTP POST tool**
+
+```xml
+<tool name="CustomerInfoTool" template="http_post_tool_1" 
+      resultExpression="${vars.http_post_1.payload}" 
+      description="Get customer information from PineValley Bank's internal database"/>
+```
+
+In the tool configuration, when you mark a field (such as **Request Body**) for AI assistance, you provide a description that guides the AI on how to populate that field. For example:
+
+```text
+Provide the customer ID in the following format: {"userID": "C567"}
+```
+
+The AI model uses this description to generate the appropriate request payload dynamically based on the user's query.
+
+#### AI tools
+
+AI tools enable agents to interact with the Generative AI Module's knowledge base operations. These tools allow agents to retrieve information from vector stores and access previously ingested documents.
+
+**Available AI tools:**
+
+**Get From Knowledge** - Retrieves relevant information from the configured knowledge base (vector store) based on a search query.
+
+**Configuration parameters:**
+
+<table>
+    <tr>
+        <th>Parameter name</th>
+        <th>Description</th>
+        <th>Required</th>
+    </tr>
+    <tr>
+        <td>name</td>
+        <td>Unique identifier for the tool (for example, GetBankDocumentsTool, SearchProductCatalog).</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>description</td>
+        <td>Clear description of what information the tool retrieves (for example, "Get PineValley bank documents from the knowledge base").</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>vectorStoreConnection</td>
+        <td>Reference to the vector store connection where the knowledge base is stored.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>embeddingModelConnection</td>
+        <td>Reference to the embedding model connection used to convert the search query into embeddings.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>input</td>
+        <td>Search query input. Mark this field for AI assistance so the model can dynamically generate appropriate search queries based on the user's request.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>maxResults</td>
+        <td>Maximum number of results to retrieve from the knowledge base.</td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td>minScore</td>
+        <td>Minimum similarity score threshold for retrieved results.</td>
+        <td>No</td>
+    </tr>
+</table>
+
+**Example: Get From Knowledge tool**
+
+```xml
+<tool name="GetBankDocumentsTool" template="ai_getFromKnowledge_tool_1" 
+      resultExpression="${vars.ai_getFromKnowledge_1.payload}" 
+      description="Get the PineValley bank documents from the knowledge base"/>
+```
+
+### Tool configuration best practices
+
+Follow these best practices when configuring tools:
+
+- **Use descriptive names** - Tool names should clearly indicate their purpose. Use PascalCase or camelCase for consistency (for example, GetCustomerInfo, CreateInvestmentAccount).
+
+- **Write clear descriptions** - The AI model relies on tool descriptions to decide when to invoke them. Make descriptions specific, actionable, and focused on what the tool does rather than how it does it.
+
+- **Provide detailed argument descriptions** - When marking fields for AI assistance, provide clear instructions about the expected format and required information. Include examples when possible.
+
+- **Test tool interactions** - Verify that tools work correctly in isolation before integrating them into agents. Use the Try It feature to test individual tools.
+
+- **Limit the number of tools** - While agents can handle multiple tools, limiting the number of tools per agent (typically 3-7) helps maintain focus and improves performance.
+
+- **Handle errors gracefully** - Ensure that external APIs return meaningful error messages that the AI model can interpret and communicate to users.
+
+### Using tools with the agent operation
+
+Tools are configured within the `agent` operation using the `<tools>` element. Each tool is defined with a `<tool>` element specifying the tool's name, template, result expression, and description.
+
+**Example configuration:**
+
+```xml
+<ai.agent>
+    <connections>
+        <llmConfigKey>OPENAI_CONN</llmConfigKey>
+        <memoryConfigKey>FILE_MEMORY_CONN</memoryConfigKey>
+    </connections>
+    <sessionId>{${payload.userID}}</sessionId>
+    <role>Customer Assistance Agent</role>
+    <instructions>Your task is to recommend suitable products based on customer data.</instructions>
+    <prompt>${payload.query}</prompt>
+    <responseVariable>ai_agent_1</responseVariable>
+    <overwriteBody>true</overwriteBody>
+    <modelName>gpt-4o</modelName>
+    <tools>
+        <tool name="CustomerInfoTool" template="http_post_tool_1" 
+              resultExpression="${vars.http_post_1.payload}" 
+              description="Get customer information from the internal database"/>
+        <tool name="GetDocumentsTool" template="ai_getFromKnowledge_tool_1" 
+              resultExpression="${vars.ai_getFromKnowledge_1.payload}" 
+              description="Get official documents from the knowledge base"/>
+    </tools>
+</ai.agent>
+```
+
+### Tool execution results
+
+When tools are invoked, the results are included in the agent's response under the `toolExecutions` array. Each tool execution includes:
+
+- **request** - Details about the tool invocation, including the tool ID, name, and arguments passed
+- **result** - The structured result returned by the tool
+
+**Example tool execution in response:**
+
+```json
+{
+  "content": "Based on your profile, I recommend the High-Interest Savings Account...",
+  "toolExecutions": [
+    {
+      "request": {
+        "id": "call_abc123",
+        "name": "CustomerInfoTool",
+        "arguments": "{\"userID\": \"C567\"}"
+      },
+      "result": "{\"userID\":\"C567\",\"name\":\"John Doe\",\"age\":30}"
+    }
+  ]
+}
+```
+
+### Learn more
+
+For a complete hands-on tutorial on building an AI agent with tools, see [Build an AI Agent]({{base_path}}/get-started/build-first-ai-integration/first-integration-ai-agent/).
     
 ## Operations
     
