@@ -199,10 +199,10 @@ To deploy the Prometheus Agent in your Kubernetes cluster, you need to create a 
     rules:
       - apiGroups: [""]
         resources:
-        - pods
-        - nodes
-        - services
-        - endpoints
+          - pods
+          - nodes
+          - services
+          - endpoints
         verbs: ["get", "list", "watch"]
     ---
     apiVersion: rbac.authorization.k8s.io/v1
