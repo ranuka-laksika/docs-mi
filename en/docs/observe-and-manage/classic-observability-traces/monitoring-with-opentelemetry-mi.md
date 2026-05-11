@@ -134,7 +134,7 @@ X-B3-SpanId=f960a2c19e696aa7, X-B3-TraceId=9f3d860546d053aa06d55844a7d209a4}, co
 
 OpenTelemetry protocol(OTLP) is a general-purpose telemetry data delivery protocol used to exchange data between the client and the server. This type can support APMs such as NewRelic, Elastic, etc.
 
-1. Copy the following configuration into the `deployment.toml` file to use OTLP.
+Copy the following configuration into the `deployment.toml` file to use OTLP.
 
     === "Format"
         ```toml
