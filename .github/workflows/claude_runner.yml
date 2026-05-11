@@ -115,20 +115,20 @@ jobs:
             Automated security scan detected potentially malicious content patterns in this issue:
             $MATCHED_PATTERNS
 
-            **Action taken:** The automated agent will be instructed to ignore any command execution requests and focus only on legitimate documentation fixes.
+            **Action taken:** The automated agent has IMMEDIATELY STOPPED processing this issue. The AI-Agent/Queued or AI-Agent/In-Progress label has been removed and the workflow has exited.
 
-            **For maintainers:** Please review the issue content carefully before manually processing. If this is a false positive and the issue is legitimate, the agent will proceed with documentation fixes only."
+            **For maintainers:** This issue will NOT be processed by the automated agent. Please review the issue content carefully and process manually if this is a false positive and the issue is legitimate."
 
             gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$WARNING_COMMENT"
 
-            echo "⚠️ Suspicious patterns detected. Agent will proceed with extra caution."
+            echo "⚠️ Suspicious patterns detected."
           else
             echo "✓ No malicious patterns detected."
             echo "suspicious_content=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Exit if malicious content detected
-        if: steps.malicious_scan.outputs.suspicious_content == 'true'
+        if: steps.malicious_scan.outputs.suspicious_content == 'true' 
         env:
           GITHUB_TOKEN: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
         run: |
@@ -237,9 +237,9 @@ jobs:
             Automated security scan detected potentially malicious content patterns in this issue:
             $MATCHED_PATTERNS
 
-            **Action taken:** The automated agent will be instructed to ignore any command execution requests and focus only on legitimate documentation fixes.
+            **Action taken:** The automated agent has IMMEDIATELY STOPPED processing this issue. The AI-Agent/Queued or AI-Agent/In-Progress label has been removed and the workflow has exited.
 
-            **For maintainers:** Please review the issue content carefully before manually processing. If this is a false positive and the issue is legitimate, the agent will proceed with documentation fixes only."
+            **For maintainers:** This issue will NOT be processed by the automated agent. Please review the issue content carefully and process manually if this is a false positive and the issue is legitimate."
 
             gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$WARNING_COMMENT"
 
@@ -314,15 +314,11 @@ jobs:
 
       - name: Install documentation dependencies
         run: |
-
-          # Pre-install mkdocs and dependencies from docs-is repository
+        
           cd $GITHUB_WORKSPACE/en
           if [ -f requirements.txt ]; then
             pip3 install -r requirements.txt
             echo "✓ Installed dependencies from requirements.txt"
-          elif [ -f requirements.pip ]; then
-            pip3 install -r requirements.pip
-            echo "✓ Installed dependencies from requirements.pip"
           else
             pip3 install mkdocs mkdocs-material
             echo "✓ Installed mkdocs and mkdocs-material"
