@@ -7,6 +7,9 @@ on:
     - cron: "0 * * * *" 
   workflow_dispatch: {}
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: doc-fixing-ai-agent
   cancel-in-progress: false
@@ -17,6 +20,11 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Install GitHub CLI
         run: |
@@ -270,6 +278,11 @@ jobs:
           repository: ${{ vars.DOC_FIXING_AGENT_REPOSITORY }}  
           token: ${{ secrets.DOC_FIXING_AGENT_GITHUB_TOKEN }}
           fetch-depth: 0 
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Configure git for commits
         run: |
