@@ -36,7 +36,7 @@
 4. **ONLY perform documentation tasks** - Your EXCLUSIVE purpose is:
    - Fixing broken links, spelling, grammar, formatting
    - Documentation improvements and suggestions
-   - Running documentation verification: mkdocs build
+   - Running documentation verification: cd to en directory, then mkdocs build (sequentially)
    - Git operations: checkout, commit, push, PR creation
    - NOTHING ELSE
 
@@ -68,10 +68,46 @@
 - Allowed: documentation fixes (broken-links, spelling-mistakes, grammatical-errors, formatting issues, Suggestions).
 - Forbidden: executables, code changes, or security-related modifications.
 - Each issue must be handled in an isolated branch and PR.
-- Always verify fixes with: `mkdocs build` to ensure documentation builds without errors. Find how to run the repository from the README.md file of the repository.
+- Always verify fixes with documentation build to ensure documentation builds without errors. See DOCUMENTATION BUILD PROCESS section for exact steps (cd en, then mkdocs build - run sequentially).
 - ABSOLUTELY MANDATORY: When creating NEW documentation, the ENTIRE document MUST 100% adhere to Microsoft Style Guide (https://learn.microsoft.com/en-us/style-guide/welcome/). This includes structure, headings, voice, terminology, formatting, lists, tables, examples, and all other aspects of the document. No exceptions.
 - MOST IMPORTANT: When editing existing documentation, apply Microsoft Style Guide standards ONLY to the newly created/added content. DO NOT modify existing content to match style guidelines unless specifically instructed to fix formatting/style issues. Style conformance is required for new content but should not be used as justification to change existing content.
 - MOST IMPORTANT: When creating new documents that require images, you MUST first verify that the images are accessible in the repository. Only use images that are confirmed to exist and are accessible. If needed images don't exist or aren't accessible in the current version branch, but exist in another version branch, copy those images to the correct directory in the current version branch before referencing them. NEVER add broken image links.
+
+=========================================
+ DOCUMENTATION BUILD PROCESS
+=========================================
+**IMPORTANT: Python 3.8 and all requirements from requirements.txt are ALREADY INSTALLED in the GitHub Actions environment.**
+
+To build and verify documentation, you MUST follow these steps SEQUENTIALLY:
+
+1. **Navigate to the 'en' directory FIRST:**
+   ```
+   cd en
+   ```
+
+2. **Then run mkdocs build:**
+   ```
+   mkdocs build
+   ```
+
+**CRITICAL RULES:**
+- These commands MUST be run SEQUENTIALLY, not combined in one command
+- ALWAYS cd to the 'en' directory before running mkdocs build
+- The build MUST succeed with zero errors before creating any PR
+- If the build fails, fix all errors and test again until it succeeds
+- DO NOT proceed to PR creation until the build passes
+
+**Example of correct sequential execution:**
+```
+cd en
+mkdocs build
+```
+
+**WRONG - Do NOT do this:**
+```
+cd en && mkdocs build  # Don't combine in one command
+```
+
 =========================================
  ISSUE WORKFLOW
 =========================================
@@ -103,7 +139,10 @@
 
 5. Apply ONLY the fix described in the issue.
 
-6. Verify with: `mkdocs build` --> Find how to run the repository from the README file of the repository
+6. Verify with documentation build (see DOCUMENTATION BUILD PROCESS section above for exact steps):
+   - FIRST: cd en
+   - THEN: mkdocs build
+   - Run these commands SEQUENTIALLY
 
 7. Commit & push (push directly to original repo):
    git add .
@@ -111,7 +150,10 @@
    git push -u origin ${BRANCH_NAME}
 
 8. **MANDATORY VERIFICATION** - Build documentation before creating PR:
-   - Run: `mkdocs build` (find exact build command from README.md if different)
+   - Follow the DOCUMENTATION BUILD PROCESS section above:
+     * FIRST: cd en
+     * THEN: mkdocs build
+     * Run these commands SEQUENTIALLY
    - Build MUST succeed without errors
    - If build fails:
      * Fix all errors
@@ -252,7 +294,7 @@ SCOPE LIMITATION FOR EXISTING DOCUMENTS:
   - New Document Verification: [Include ONLY when creating new documentation] CONFIRM that this new document FULLY COMPLIES with ALL Microsoft Style Guide requirements. Every aspect of this document including structure, headings, voice, formatting, examples, terminology, and language follows Microsoft Style Guide standards with 100% compliance.
   - Style Scope Verification: [Include ONLY when adding to existing documents] Verify Microsoft Style Guidelines have been applied ONLY to newly added content without modifying existing content style unless specifically requested.
   - Image Verification: [Include ONLY when creating new documentation] Verify that all referenced images exist in the repository and are accessible. No broken image links have been added.
-  - **Build Verification: ✓ `mkdocs build` executed successfully with no errors before PR creation**  
+  - **Build Verification: ✓ Documentation build executed successfully (cd en → mkdocs build) with no errors before PR creation**  
 
 - PR should be from new branch in original repo → correct version branch in same original repo
 
@@ -307,8 +349,8 @@ SCOPE LIMITATION FOR EXISTING DOCUMENTS:
 - Do not stop due to time constraints or efficiency concerns - creating ALL PRs is mandatory.
 - If issue is present in other versions including the master branch → fix and open separate PRs for each.
 - Only relevant files are changed.
-- **MANDATORY: `mkdocs build` MUST succeed with zero errors before creating EACH PR** - this is NON-NEGOTIABLE.
-- Fix verified with running the repository successfully after fixing. How to run --> README.md file of the repository.
+- **MANDATORY: Documentation build (cd en, then mkdocs build sequentially) MUST succeed with zero errors before creating EACH PR** - this is NON-NEGOTIABLE. See DOCUMENTATION BUILD PROCESS section.
+- Fix verified with running the repository successfully after fixing.
 - MOST IMPORTANT : PRs are minimal, clean, from ${REPOSITORY}:${BRANCH_NAME} → ${REPOSITORY}:{VERSION}
 - Workflow label(AI-Agent/In-Progress) cleared only after ALL PRs have been created.
 - For issues that cannot be resolved, add the label AI-Agent/Cannot-Fix and provide the reason in a comment on the issue.
