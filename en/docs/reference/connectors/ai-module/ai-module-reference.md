@@ -1209,6 +1209,66 @@ The connection configuration parameters are used to establish a connection with 
     }
     ```  
 
+## Using tools with AI agents
+
+Tools extend the capabilities of AI agents by enabling them to perform actions and retrieve information from external sources. When you configure tools for an agent, the agent can dynamically decide which tools to use based on the user's query, execute them, and incorporate the results into its response.
+
+### What are tools?
+
+Tools are operations that an AI agent can invoke to accomplish tasks beyond simple text generation. They allow agents to:
+
+- Access external APIs and services through HTTP requests
+- Retrieve information from knowledge bases
+- Interact with databases and vector stores
+- Use Model Context Protocol (MCP) tools for enhanced functionality
+
+### Types of tools
+
+The WSO2 MI Generative AI Module supports the following types of tools:
+
+- **HTTP tools**  
+    Enable agents to make HTTP requests (GET, POST, PUT, DELETE) to external APIs and services. You can configure HTTP tools with connection details, request parameters, and headers to integrate with any HTTP-based service.
+
+- **AI tools**  
+    Allow agents to use AI module operations such as `getFromKnowledge` and `addToKnowledge` to interact with vector databases and knowledge bases. These tools enable retrieval-augmented generation workflows where agents can access relevant information before generating responses.
+
+- **MCP tools**  
+    Provide access to Model Context Protocol servers, which offer specialized capabilities such as file system operations, database queries, and integration with external platforms. MCP tools follow a standardized protocol for tool discovery and execution.
+
+### How tools enhance agent capabilities
+
+When you add tools to an agent, the LLM analyzes the user's query and determines which tools (if any) are needed to fulfill the request. The agent then:
+
+1. Identifies the appropriate tool based on the tool name and description
+2. Extracts or generates the required parameters for the tool
+3. Executes the tool and receives the result
+4. Incorporates the tool result into its response to the user
+
+This enables agents to provide accurate, up-to-date information from external sources rather than relying solely on the LLM's training data.
+
+### Configuring tools for agents
+
+To add a tool to an agent operation, you need to:
+
+1. Define the tool with a name and description that helps the LLM understand when to use it
+2. Configure the connection details (HTTP endpoint, MCP server, or AI module connection)
+3. Specify which parameters should be provided by the AI (marked as arguments)
+4. Add the tool to the agent's configuration
+
+The agent automatically manages tool execution during conversation, calling tools as needed and using their results to generate informed responses.
+
+### Using MCP tools
+
+Model Context Protocol (MCP) tools provide a standardized way to extend agent capabilities through external servers. To use MCP tools with your agent:
+
+1. Create an MCP connection by specifying the MCP server URL and authentication configuration
+2. Select the connection when adding tools to your agent
+3. Choose which tools from the MCP server to make available to the agent
+
+The MCP server defines the available tools and their parameters, and the agent can discover and use these tools dynamically during execution.
+
+For a complete tutorial on building an AI agent with HTTP tools, AI tools, and MCP tools, refer to the [Build an AI Agent]({{base_path}}/get-started/build-first-ai-integration/first-integration-ai-agent/) tutorial. The tutorial provides step-by-step guidance on configuring tools and demonstrates how agents use them to accomplish complex tasks.
+
 ??? note "addToKnowledge"
     The `ragChat` operation sends a message to the LLM and retrieves a response, leveraging a Retrieval-Augmented Generation (RAG) approach.  
     **Connection Parameters:**
