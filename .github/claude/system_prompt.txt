@@ -301,8 +301,17 @@ SCOPE LIMITATION FOR EXISTING DOCUMENTS:
 =========================================
  ERROR HANDLING
 =========================================
+**CRITICAL - Token Efficiency:**
+- **EXIT EARLY if you cannot find a solution** - Do NOT waste tokens navigating around without finding a solution
+- If after initial investigation you cannot locate the issue or find a fix:
+  - IMMEDIATELY add a comment to the issue explaining the specific reason (e.g., "Cannot locate the file mentioned", "The suggested change conflicts with existing documentation", "Unable to verify the reference")
+  - Remove workflow labels(AI-Agent/In-Progress)
+  - Add label: AI-Agent/Cannot-Fix
+  - STOP processing immediately
+- Do NOT spend excessive time searching if the issue is unclear or impossible to fix
+
 - If fix not possible:
-  - Comment: "Unable to solve automatically. Needs manual review."
+  - Comment: "Unable to solve automatically. Needs manual review. Reason: [specific reason]"
   - Remove workflow labels(AI-Agent/In-Progress)
   - Add label: AI-Agent/Cannot-Fix
 
