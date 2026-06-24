@@ -602,7 +602,272 @@ The connection configuration parameters are used to establish a connection with 
             <td>Yes</td>
         </tr>
     </table>
-    
+
+## Tools
+
+Tools enable AI agents to interact with external systems, retrieve data, and perform actions. When you configure an agent with tools, the AI model can determine when and how to use them based on the user's query and the tool descriptions you provide.
+
+### Tool types
+
+The Generative AI Module supports the following tool types:
+
+- **HTTP tools**: Enable the agent to make HTTP requests (GET, POST, PUT, DELETE, PATCH) to external APIs or services.
+
+- **AI operation tools**: Enable the agent to use AI module operations such as `getFromKnowledge` to retrieve information from vector stores.
+
+- **MCP tools**: Enable the agent to connect to Model Context Protocol (MCP) servers and use the tools they provide.
+
+### How tools work with agents
+
+When you add tools to an agent operation, the AI model analyzes the user's query and the available tools. If the query requires external data or actions, the model selects the appropriate tool, generates the necessary arguments, and executes the tool. The tool's response is then used to formulate the agent's final response to the user.
+
+For example, if a user asks "What is the weather in New York?", an agent configured with a weather API tool can:
+
+1. Identify that weather information is needed.
+2. Select the appropriate weather tool.
+3. Generate the required arguments (location: "New York").
+4. Execute the tool to fetch weather data.
+5. Use the retrieved data to respond to the user.
+
+### Tool configuration parameters
+
+All tools share common configuration parameters:
+
+<table>
+    <tr>
+        <th>Parameter name</th>
+        <th>Display name</th>
+        <th>Description</th>
+        <th>Required</th>
+    </tr>
+    <tr>
+        <td>name</td>
+        <td>Tool Name</td>
+        <td>Unique identifier for the tool. The AI model uses this name to reference the tool.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>description</td>
+        <td>Tool Description</td>
+        <td>Clear description of what the tool does. The AI model uses this description to determine when to use the tool. Be specific and include the purpose and expected behavior.</td>
+        <td>Yes</td>
+    </tr>
+</table>
+
+### HTTP tools
+
+HTTP tools allow the agent to make HTTP requests to external APIs. Each HTTP method (GET, POST, PUT, DELETE, PATCH) has specific configuration parameters.
+
+#### HTTP tool configuration parameters
+
+In addition to the common tool parameters, HTTP tools require the following configuration:
+
+<table>
+    <tr>
+        <th>Parameter name</th>
+        <th>Display name</th>
+        <th>Description</th>
+        <th>Required</th>
+    </tr>
+    <tr>
+        <td>connection</td>
+        <td>HTTP Connection</td>
+        <td>HTTP connection that defines the base URL and authentication for the target API.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>relativePath</td>
+        <td>Relative Path</td>
+        <td>Path to append to the base URL defined in the connection.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>requestBody</td>
+        <td>Request Body</td>
+        <td>Request payload for POST, PUT, and PATCH methods. You can mark this field as an AI-populated argument by clicking the magic button, allowing the AI to generate the appropriate request body dynamically.</td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td>headers</td>
+        <td>Headers</td>
+        <td>HTTP headers to include in the request.</td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td>queryParameters</td>
+        <td>Query Parameters</td>
+        <td>Query parameters to include in the request URL. You can mark parameters as AI-populated arguments.</td>
+        <td>No</td>
+    </tr>
+</table>
+
+**Sample HTTP POST tool configuration**
+
+```xml
+<tool name="CustomerInfoTool" template="http_post_tool_1" resultExpression="${vars.http_post_tool.payload}" description="Get customer information from the internal database">
+    <http.post>
+        <connection>BANK_API_CONN</connection>
+        <relativePath>/customerInfo</relativePath>
+        <requestBody aiPopulated="true" description="Provide the customer ID in the following format: {userID: 'C567'}"/>
+    </http.post>
+</tool>
+```
+
+### AI operation tools
+
+AI operation tools enable the agent to use AI module operations as tools. Currently, the `getFromKnowledge` operation is supported as a tool, allowing agents to retrieve information from vector stores.
+
+#### Get from knowledge tool configuration parameters
+
+In addition to the common tool parameters, the `getFromKnowledge` tool requires the following configuration:
+
+<table>
+    <tr>
+        <th>Parameter name</th>
+        <th>Display name</th>
+        <th>Description</th>
+        <th>Required</th>
+    </tr>
+    <tr>
+        <td>embeddingConfigKey</td>
+        <td>Embedding Model Connection</td>
+        <td>Connection to the embedding model provider. Refer to the <a href="#embedding-model-connection">Embedding Model Connection</a> section for more details.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>vectorStoreConfigKey</td>
+        <td>Vector Store Connection</td>
+        <td>Connection to the vector store provider. Refer to the <a href="#vector-database-knowledgebase-connection">Vector Database Connection</a> section for more details.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>input</td>
+        <td>Input</td>
+        <td>Search query to retrieve relevant information from the knowledge base. You can mark this field as an AI-populated argument.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>embeddingModel</td>
+        <td>Embedding Model</td>
+        <td>Name of the embedding model to use for generating embeddings from the input query.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>maxResults</td>
+        <td>Max Results</td>
+        <td>Maximum number of results to retrieve from the vector store.</td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td>minScore</td>
+        <td>Min Score</td>
+        <td>Minimum similarity score threshold for the results.</td>
+        <td>No</td>
+    </tr>
+</table>
+
+**Sample get from knowledge tool configuration**
+
+```xml
+<tool name="GetBankDocumentsTool" template="ai_getFromKnowledge_tool_1" resultExpression="${vars.ai_getFromKnowledge_tool.payload}" description="Retrieve PineValley Bank documents from the knowledge base">
+    <ai.getFromKnowledge>
+        <connections>
+            <embeddingConfigKey>EMBEDDING_CONN</embeddingConfigKey>
+            <vectorStoreConfigKey>VECTOR_STORE_CONN</vectorStoreConfigKey>
+        </connections>
+        <input aiPopulated="true" description="Search query to find relevant bank documents"/>
+        <embeddingModel>text-embedding-3-small</embeddingModel>
+        <maxResults>5</maxResults>
+        <minScore>0.75</minScore>
+    </ai.getFromKnowledge>
+</tool>
+```
+
+### MCP tools
+
+Model Context Protocol (MCP) tools enable the agent to connect to MCP servers and use the tools they provide. MCP is a standardized protocol for connecting AI models to external data sources and tools.
+
+#### MCP connection configuration
+
+To use MCP tools, you must first create an MCP connection.
+
+<img src="{{base_path}}/assets/img/get-started/build-first-ai-integration/agent/add_mcp_connection.jpeg" title="MCP Connection Configuration" width="700" alt="MCP Connection Configuration"/>
+
+**MCP connection parameters:**
+
+<table>
+    <tr>
+        <th>Parameter name</th>
+        <th>Display name</th>
+        <th>Description</th>
+        <th>Required</th>
+    </tr>
+    <tr>
+        <td>name</td>
+        <td>Connection Name</td>
+        <td>Name of the MCP connection.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>url</td>
+        <td>MCP Server URL</td>
+        <td>URL of the MCP server that provides the tools.</td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>authConfig</td>
+        <td>Authentication Configuration</td>
+        <td>Authentication credentials required to connect to the MCP server (if authentication is enabled).</td>
+        <td>No</td>
+    </tr>
+</table>
+
+#### Adding MCP tools to an agent
+
+Once you have created an MCP connection, you can add MCP tools to your agent. When you select an MCP connection, the available tools from that MCP server are automatically listed, allowing you to select which tools to include.
+
+<img src="{{base_path}}/assets/img/get-started/build-first-ai-integration/agent/select_mcp_tools.jpeg" title="Select MCP Tools" width="700" alt="Select MCP Tools"/>
+
+**Sample agent configuration with MCP tools**
+
+```xml
+<ai.agent>
+    <connections>
+        <llmConfigKey>LLM_CONN</llmConfigKey>
+        <memoryConfigKey>MEMORY_CONN</memoryConfigKey>
+    </connections>
+    <sessionId>{${payload.sessionId}}</sessionId>
+    <role>Customer Service Agent</role>
+    <instructions>Assist customers with their queries using available tools.</instructions>
+    <prompt>${payload.query}</prompt>
+    <responseVariable>ai_agent_1</responseVariable>
+    <overwriteBody>false</overwriteBody>
+    <modelName>gpt-4o</modelName>
+    <tools>
+        <tool name="MCPTool1" template="mcp_tool_1" resultExpression="${vars.mcp_tool_1.payload}" description="Description of MCP tool functionality"/>
+        <tool name="MCPTool2" template="mcp_tool_2" resultExpression="${vars.mcp_tool_2.payload}" description="Description of another MCP tool"/>
+    </tools>
+</ai.agent>
+```
+
+### Best practices for tool configuration
+
+When configuring tools for your AI agent, follow these best practices:
+
+- **Write clear tool descriptions**: The AI model relies on tool descriptions to determine when to use each tool. Be specific about what the tool does, what data it retrieves, and when it should be used.
+
+- **Use meaningful tool names**: Choose descriptive names that clearly indicate the tool's purpose (for example, `GetCustomerInfo` instead of `Tool1`).
+
+- **Mark appropriate fields as AI-populated**: Use the AI-populated argument feature for fields that the AI should fill dynamically based on the user's query.
+
+- **Provide argument descriptions**: When marking a field as AI-populated, include a clear description that explains what information the AI should provide and in what format.
+
+- **Test tool execution**: Verify that each tool works correctly in isolation before adding it to the agent.
+
+- **Limit the number of tools**: While agents can work with multiple tools, providing too many tools can reduce the AI model's accuracy in selecting the right tool. Start with essential tools and add more as needed.
+
+For a complete tutorial on using tools with AI agents, see the [Build an AI Agent]({{base_path}}/get-started/build-first-ai-integration/first-integration-ai-agent/) tutorial.
+
 ## Operations
     
 ??? note "chat"
