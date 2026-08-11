@@ -8,9 +8,12 @@ ALLOWED_PATTERNS=(
 )
 
 # Get list of files staged for commit
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+STAGED_FILES=()
+while IFS= read -r -d '' file; do
+    STAGED_FILES+=("$file")
+done < <(git diff --cached --name-only -z --diff-filter=ACMR)
 
-if [ -z "$STAGED_FILES" ]; then
+if [ ${#STAGED_FILES[@]} -eq 0 ]; then
     exit 0
 fi
 
@@ -19,7 +22,7 @@ echo "Pre-commit validation: Checking staged files against whitelist..."
 # Check if all changes are within allowed patterns (whitelist enforcement)
 INVALID_FOUND=false
 
-for file in $STAGED_FILES; do
+for file in "${STAGED_FILES[@]}"; do
     ALLOWED=false
 
     for pattern in "${ALLOWED_PATTERNS[@]}"; do
@@ -64,12 +67,10 @@ echo "Scanning for secrets in staged changes..."
 SECRETS_FOUND=false
 
 TEXT_FILES=()
-for file in $STAGED_FILES; do
-    case "${file,,}" in
-        *.png|*.jpg|*.jpeg|*.gif|*.webp|*.svg|*.ico|*.bmp|*.pdf)
-            continue
-            ;;
-    esac
+for file in "${STAGED_FILES[@]}"; do
+    if [ "$(git show ":$file" 2>/dev/null | LC_ALL=C tr -dc '\000' | wc -c | tr -d ' ')" -gt 0 ]; then
+        continue
+    fi
     TEXT_FILES+=("$file")
 done
 
@@ -79,8 +80,18 @@ if [ ${#TEXT_FILES[@]} -eq 0 ]; then
     exit 0
 fi
 
-STAGED_DIFF=$(git diff --cached -- "${TEXT_FILES[@]}")
-ADDED_LINES=$(echo "$STAGED_DIFF" | grep '^+' | grep -v '^+++' || true)
+# Get the diff of staged changes
+if ! STAGED_DIFF=$(git diff --cached --no-color -- "${TEXT_FILES[@]}"); then
+    echo "COMMIT BLOCKED: Unable to read staged diff for secret scanning"
+    exit 1
+fi
+
+ADDED_LINES=$(printf '%s\n' "$STAGED_DIFF" | awk '
+    /^\+\+\+ /      { next }
+    /^@@/           { inhunk = 1; next }
+    /^diff /        { inhunk = 0; next }
+    inhunk && /^\+/ { print substr($0, 2) }
+')
 
 # Check for common secret patterns
 if echo "$ADDED_LINES" | grep -qE '(ghp_[a-zA-Z0-9]{36}|ghs_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{32,}|xox[baprs]-[a-zA-Z0-9-]+|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)' || \
@@ -106,4 +117,3 @@ fi
 echo "No secrets detected"
 echo "Pre-commit validation passed"
 exit 0
-
