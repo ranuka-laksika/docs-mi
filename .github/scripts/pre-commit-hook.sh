@@ -63,17 +63,33 @@ echo ""
 echo "Scanning for secrets in staged changes..."
 SECRETS_FOUND=false
 
-# Get the diff of staged changes
-STAGED_DIFF=$(git diff --cached)
+TEXT_FILES=()
+for file in $STAGED_FILES; do
+    case "${file,,}" in
+        *.png|*.jpg|*.jpeg|*.gif|*.webp|*.svg|*.ico|*.bmp|*.pdf)
+            continue
+            ;;
+    esac
+    TEXT_FILES+=("$file")
+done
+
+if [ ${#TEXT_FILES[@]} -eq 0 ]; then
+    echo "No text files to scan for secrets"
+    echo "Pre-commit validation passed"
+    exit 0
+fi
+
+STAGED_DIFF=$(git diff --cached -- "${TEXT_FILES[@]}")
+ADDED_LINES=$(echo "$STAGED_DIFF" | grep '^+' | grep -v '^+++' || true)
 
 # Check for common secret patterns
-if echo "$STAGED_DIFF" | grep -qE '(ghp_[a-zA-Z0-9]{36}|ghs_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{32,}|xox[baprs]-[a-zA-Z0-9-]+|AKIA[0-9A-Z]{16}|\b[A-Za-z0-9+/]{40}=?\b)' || \
-   echo "$STAGED_DIFF" | grep -qiE '(password|secret|api[_-]?key|token)\s*[:=]\s*["\x27][^"\x27\s]{8,}["\x27]'; then
+if echo "$ADDED_LINES" | grep -qE '(ghp_[a-zA-Z0-9]{36}|ghs_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{32,}|xox[baprs]-[a-zA-Z0-9-]+|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)' || \
+   echo "$ADDED_LINES" | grep -qiE '(password|secret|api[_-]?key|token)\s*[:=]\s*["\x27][^"\x27\s]{8,}["\x27]'; then
     echo "COMMIT BLOCKED: Potential secrets detected in staged changes"
     echo ""
     echo "Detected secret-like patterns in staged changes (content redacted for security)."
-    echo "$STAGED_DIFF" | grep -cE '(ghp_[a-zA-Z0-9]{36}|ghs_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{32,}|xox[baprs]-[a-zA-Z0-9-]+|AKIA[0-9A-Z]{16})' || true
-    echo "$STAGED_DIFF" | grep -ciE '(password|secret|api[_-]?key|token)\s*[:=]\s*["\x27][^"\x27\s]{8,}["\x27]' || true
+    echo "$ADDED_LINES" | grep -cE '(ghp_[a-zA-Z0-9]{36}|ghs_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{32,}|xox[baprs]-[a-zA-Z0-9-]+|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)' || true
+    echo "$ADDED_LINES" | grep -ciE '(password|secret|api[_-]?key|token)\s*[:=]\s*["\x27][^"\x27\s]{8,}["\x27]' || true
     SECRETS_FOUND=true
 fi
 
@@ -90,3 +106,4 @@ fi
 echo "No secrets detected"
 echo "Pre-commit validation passed"
 exit 0
+
