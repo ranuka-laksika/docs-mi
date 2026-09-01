@@ -1,11 +1,11 @@
 name: Claude Code • Auto PR on Comment
 
-on:
-  issue_comment:
-    types: [created]
-  schedule:
-    - cron: "0 * * * *" 
-  workflow_dispatch: {}
+# on:
+#   issue_comment:
+#     types: [created]
+#   schedule:
+#     - cron: "0 * * * *" 
+#   workflow_dispatch: {}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
